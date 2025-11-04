@@ -43,7 +43,7 @@ import {
 } from '@/lib/ai/models';
 import { Action, Actions } from '@/components/ai-elements/actions';
 import { Fragment, useState } from 'react';
-import { useChat } from '@ai-sdk/react';
+import { useChat } from '@ai-sdk-tools/store';
 import { Response } from '@/components/ai-elements/response';
 import { CopyIcon, GlobeIcon, ImageIcon, RefreshCcwIcon, TimerIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -59,6 +59,8 @@ import {
   ReasoningTrigger,
 } from '@/components/ai-elements/reasoning';
 import { Loader } from '@/components/ai-elements/loader';
+import { TextNotePanel } from '@/components/ai-elements/text-note-panel';
+import { ChatRunStatus } from '@/components/ai-elements/chat-run-status';
 
 type MenuToggleItemProps = {
   icon: LucideIcon;
@@ -142,6 +144,8 @@ const ChatBotDemo = () => {
       <div className="flex flex-col h-full">
         <Conversation className="h-full">
           <ConversationContent>
+            <ChatRunStatus />
+            <TextNotePanel />
             {messages.map((message) => (
               <div key={message.id}>
                 {message.role === 'assistant' && message.parts.filter((part) => part.type === 'source-url').length > 0 && (
