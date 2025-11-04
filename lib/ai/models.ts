@@ -1,5 +1,3 @@
-export const WEB_SEARCH_MODEL = 'perplexity/sonar';
-
 export type AnthropicModelId =
   | 'anthropic/claude-haiku-4.5'
   | 'anthropic/claude-sonnet-4.5';
@@ -17,14 +15,14 @@ export const ANTHROPIC_MODELS: AnthropicModelDefinition[] = [
 export const DEFAULT_ANTHROPIC_MODEL: AnthropicModelId =
   'anthropic/claude-haiku-4.5';
 
-const allowedAnthropicModelIds = new Set<AnthropicModelId>(
+const allowedAnthropicModelIds = new Set<string>(
   ANTHROPIC_MODELS.map((model) => model.id),
 );
 
 export const isAnthropicModelId = (
   model: string | undefined,
 ): model is AnthropicModelId =>
-  typeof model === 'string' && allowedAnthropicModelIds.has(model as AnthropicModelId);
+  typeof model === 'string' && allowedAnthropicModelIds.has(model);
 
 export const resolveAnthropicModel = (
   model: string | undefined,

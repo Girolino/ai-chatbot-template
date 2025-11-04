@@ -4,6 +4,7 @@ export type BuildProviderOptionsParams = {
   model: string;
   extendedThinking?: boolean;
   thinkingBudgetTokens?: number;
+  skills?: AnthropicSkillConfig[];
 };
 
 export type AnthropicProviderOptions = {
@@ -11,6 +12,15 @@ export type AnthropicProviderOptions = {
     type: 'enabled';
     budgetTokens?: number;
   };
+  container?: {
+    skills: AnthropicSkillConfig[];
+  };
+};
+
+export type AnthropicSkillConfig = {
+  type: 'anthropic' | 'custom';
+  skillId: string;
+  version?: string;
 };
 
 export type ProviderOptions = {
@@ -26,17 +36,30 @@ export const buildProviderOptions = ({
   model,
   extendedThinking = false,
   thinkingBudgetTokens = DEFAULT_THINKING_BUDGET_TOKENS,
+  skills,
 }: BuildProviderOptionsParams): ProviderOptions | undefined => {
-  if (!extendedThinking || !isAnthropicModel(model)) {
+  if (!isAnthropicModel(model)) {
     return undefined;
   }
 
-  return {
-    anthropic: {
-      thinking: {
-        type: 'enabled',
-        budgetTokens: thinkingBudgetTokens,
-      },
-    },
-  };
+  const anthropicOptions: AnthropicProviderOptions = {};
+
+  if (extendedThinking) {
+    anthropicOptions.thinking = {
+      type: 'enabled',
+      budgetTokens: thinkingBudgetTokens,
+    };
+  }
+
+  if (skills?.length) {
+    anthropicOptions.container = {
+      skills,
+    };
+  }
+
+  if (Object.keys(anthropicOptions).length === 0) {
+    return undefined;
+  }
+
+  return { anthropic: anthropicOptions };
 };

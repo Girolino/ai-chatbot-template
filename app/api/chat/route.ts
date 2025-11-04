@@ -1,9 +1,7 @@
 import { streamText, UIMessage, convertToModelMessages } from 'ai';
-import {
-  WEB_SEARCH_MODEL,
-  resolveAnthropicModel,
-} from '@/lib/ai/models';
+import { resolveAnthropicModel } from '@/lib/ai/models';
 import { buildProviderOptions } from '@/lib/ai/provider-options';
+import { buildAnthropicTools, DEFAULT_SKILLS } from '@/lib/ai/tools';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -22,19 +20,26 @@ export async function POST(req: Request) {
   } = await req.json();
 
   const selectedModel = resolveAnthropicModel(model);
-  const providerOptions = !webSearch
-    ? buildProviderOptions({
-        model: selectedModel,
-        extendedThinking,
-      })
-    : undefined;
+  const enableSkills = true;
 
-  const modelId = webSearch ? WEB_SEARCH_MODEL : selectedModel;
+  const tools = buildAnthropicTools({
+    enableMemory: true,
+    enableWebFetch: true,
+    enableSkills,
+    enableWebSearch: webSearch,
+  });
+
+  const providerOptions = buildProviderOptions({
+    model: selectedModel,
+    extendedThinking,
+    skills: enableSkills ? DEFAULT_SKILLS : undefined,
+  });
 
   const result = streamText({
-    model: modelId,
+    model: selectedModel,
     messages: convertToModelMessages(messages),
     providerOptions,
+    tools,
     system:
       'You are a helpful assistant that can answer questions and help with tasks',
   });

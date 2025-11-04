@@ -1,4 +1,4 @@
-git add .; git commit -m '  v0.01.01 feat: thinking budget'; git push origin main
+git add .; git commit -m '  v0.01.02 feat: command in the input prompt'; git push origin main
 git reset --hard; git clean -fd; git checkout dev-branch; git pull origin dev-branch
 git reset --hard c2366a1
 git push --force origin dev-branch
