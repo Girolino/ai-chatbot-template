@@ -43,3 +43,6 @@ next-env.d.ts
 # documentation (keep local only)
 docs/
 AGENTS.md
+
+# forked repositories (keep local only)
+fork-ai-tools/
