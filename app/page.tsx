@@ -28,11 +28,15 @@ import {
   PromptInputFooter,
   PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
+import {
+  ANTHROPIC_MODELS,
+  DEFAULT_ANTHROPIC_MODEL,
+} from '@/lib/ai/models';
 import { Action, Actions } from '@/components/ai-elements/actions';
 import { Fragment, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { Response } from '@/components/ai-elements/response';
-import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
+import { CopyIcon, GlobeIcon, RefreshCcwIcon, TimerIcon } from 'lucide-react';
 import {
   Source,
   Sources,
@@ -46,21 +50,13 @@ import {
 } from '@/components/ai-elements/reasoning';
 import { Loader } from '@/components/ai-elements/loader';
 
-const models = [
-  {
-    name: 'GPT 4o',
-    value: 'openai/gpt-4o',
-  },
-  {
-    name: 'Deepseek R1',
-    value: 'deepseek/deepseek-r1',
-  },
-];
+const models = ANTHROPIC_MODELS;
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
-  const [model, setModel] = useState<string>(models[0].value);
+  const [model, setModel] = useState<string>(DEFAULT_ANTHROPIC_MODEL);
   const [webSearch, setWebSearch] = useState(false);
+  const [extendedThinking, setExtendedThinking] = useState(false);
   const { messages, sendMessage, status, regenerate } = useChat();
 
   const handleSubmit = (message: PromptInputMessage) => {
@@ -78,8 +74,9 @@ const ChatBotDemo = () => {
       },
       {
         body: {
-          model: model,
-          webSearch: webSearch,
+          model,
+          webSearch,
+          extendedThinking,
         },
       },
     );
@@ -194,6 +191,15 @@ const ChatBotDemo = () => {
                 <GlobeIcon size={16} />
                 <span>Search</span>
               </PromptInputButton>
+              <PromptInputButton
+                aria-pressed={extendedThinking}
+                title="Extended thinking"
+                variant={extendedThinking ? 'default' : 'ghost'}
+                onClick={() => setExtendedThinking((prev) => !prev)}
+              >
+                <TimerIcon size={16} />
+                <span>Think</span>
+              </PromptInputButton>
               <PromptInputModelSelect
                 onValueChange={(value) => {
                   setModel(value);
@@ -201,12 +207,15 @@ const ChatBotDemo = () => {
                 value={model}
               >
                 <PromptInputModelSelectTrigger>
-                  <PromptInputModelSelectValue />
+                  <PromptInputModelSelectValue placeholder="Selecione o modelo" />
                 </PromptInputModelSelectTrigger>
                 <PromptInputModelSelectContent>
-                  {models.map((model) => (
-                    <PromptInputModelSelectItem key={model.value} value={model.value}>
-                      {model.name}
+                  {models.map((modelOption) => (
+                    <PromptInputModelSelectItem
+                      key={modelOption.id}
+                      value={modelOption.id}
+                    >
+                      {modelOption.label}
                     </PromptInputModelSelectItem>
                   ))}
                 </PromptInputModelSelectContent>

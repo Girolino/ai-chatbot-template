@@ -1,6 +1,6 @@
 # Claude Provider - Anthropic AI SDK
 
-Documentacao completa para uso do Anthropic Provider com foco em Claude Haiku no AI SDK.
+Documentacao completa para uso do Anthropic Provider com foco em Claude Haiku 4.5 no AI SDK.
 
 ## Indice
 
@@ -33,9 +33,9 @@ O Anthropic Provider para AI SDK permite integracao completa com os modelos Clau
 - **Reasoning/Thinking** para raciocinio explicito
 - **Provider-defined tools** (bash, web search, etc)
 
-### Por que Claude Haiku?
+### Por que Claude Haiku 4.5?
 
-Claude Haiku e o modelo mais rapido e economico da linha Claude, ideal para:
+Claude Haiku 4.5 e o modelo mais rapido e economico da linha Claude, ideal para:
 
 - **Alta velocidade de resposta** (~3x mais rapido que Sonnet)
 - **Custo reduzido** (~90% mais barato que Opus)
@@ -129,9 +129,7 @@ const anthropic = createAnthropic({
 
 | Modelo | ID | Velocidade | Custo | Casos de Uso |
 |--------|------------|-----------|-------|--------------|
-| **Claude Haiku 3** | `claude-3-haiku-20240307` | ⚡⚡⚡ | $ | Chat, analise, classificacao |
-| **Claude Haiku 3.5** | `claude-3-5-haiku-latest` | ⚡⚡⚡ | $ | Versao melhorada do Haiku |
-| **Claude Haiku 4.5** | `claude-haiku-4-5` | ⚡⚡⚡ | $ | Ultima versao, mais capaz |
+| **Claude Haiku 4.5** | `claude-haiku-4-5` | ⚡⚡⚡ | $ | Versao mais recente, foco deste guia |
 | **Claude Sonnet 3.5** | `claude-3-5-sonnet-20240620` | ⚡⚡ | $$ | Uso geral, balanceado |
 | **Claude Sonnet 4** | `claude-sonnet-4-20250514` | ⚡⚡ | $$ | Mais avancado |
 | **Claude Opus 3** | `claude-3-opus-20240229` | ⚡ | $$$ | Tarefas complexas |
@@ -139,17 +137,17 @@ const anthropic = createAnthropic({
 
 ### Recomendacoes por Caso de Uso
 
-#### Para Claude Haiku (Foco deste projeto)
+#### Para Claude Haiku 4.5 (Foco deste projeto)
 
 \```typescript
-// ✅ Casos ideais para Haiku
+// ✅ Casos ideais para Haiku 4.5
 const HAIKU_IDEAL_CASES = {
-  chat: 'claude-3-5-haiku-latest',           // Chat basico
-  classification: 'claude-3-5-haiku-latest', // Classificacao de texto
-  summarization: 'claude-3-5-haiku-latest',  // Resumos
-  extraction: 'claude-3-5-haiku-latest',     // Extracao de dados
-  translation: 'claude-3-5-haiku-latest',    // Traducao
-  codeCompletion: 'claude-3-5-haiku-latest', // Code completion simples
+  chat: 'claude-haiku-4-5',           // Chat basico
+  classification: 'claude-haiku-4-5', // Classificacao de texto
+  summarization: 'claude-haiku-4-5',  // Resumos
+  extraction: 'claude-haiku-4-5',     // Extracao de dados
+  translation: 'claude-haiku-4-5',    // Traducao
+  codeCompletion: 'claude-haiku-4-5', // Code completion simples
 };
 
 // ❌ Casos que podem precisar de modelos maiores
@@ -170,9 +168,9 @@ const NEEDS_SONNET_OR_OPUS = {
 | Tool Calling | ✅ | ✅ | ✅ |
 | Object Generation | ✅ | ✅ | ✅ |
 | Prompt Caching | ✅ | ✅ | ✅ |
-| Reasoning/Thinking | ❌ | ✅ | ✅ |
-| Computer Use | ❌ | ❌ | ✅ |
-| Web Search | ❌ | ✅ | ✅ |
+| Reasoning/Thinking | ✅ | ✅ | ✅ |
+| Computer Use | ✅ | ✅ | ✅ |
+| Web Search | ✅ | ✅ | ✅ |
 | Max Output Tokens | 4096 | 8192 | 8192 |
 | Context Window | 200K | 200K | 200K |
 
@@ -187,7 +185,7 @@ import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 
 const { text } = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Explique o que e Next.js em 3 paragrafos',
 });
 
@@ -198,7 +196,7 @@ console.log(text);
 
 \```typescript
 const { text, usage, finishReason } = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Escreva uma receita de lasanha vegetariana para 4 pessoas',
 
   // Parametros de controle
@@ -220,7 +218,7 @@ console.log('Razao de termino:', finishReason);
 
 \```typescript
 const { text } = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -249,7 +247,7 @@ import { streamText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 
 const result = streamText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Escreva um artigo sobre inteligencia artificial',
 });
 
@@ -277,7 +275,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     messages,
     system: 'Voce e um assistente util e prestativo.',
   });
@@ -323,7 +321,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 
 const result = streamObject({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   schema: z.object({
     title: z.string(),
     summary: z.string(),
@@ -355,7 +353,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   tools: {
     weather: tool({
       description: 'Obtem o clima atual de uma cidade',
@@ -401,7 +399,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 
 const result = streamText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   tools: {
     search: tool({
       description: 'Busca informacoes na web',
@@ -430,7 +428,7 @@ for await (const chunk of result.textStream) {
 
 \```typescript
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   tools: { /* ... */ },
   prompt: 'Execute estas tarefas',
   providerOptions: {
@@ -498,7 +496,7 @@ import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -530,7 +528,7 @@ const imageBuffer = fs.readFileSync('./image.png');
 const base64Image = imageBuffer.toString('base64');
 
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -553,7 +551,7 @@ const result = await generateText({
 
 \```typescript
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -585,7 +583,7 @@ import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -617,7 +615,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 const pdfBuffer = fs.readFileSync('./document.pdf');
 
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -641,7 +639,7 @@ const result = await generateText({
 
 \```typescript
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -682,7 +680,7 @@ const longDocumentation = \`
 \`;
 
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -721,7 +719,7 @@ const systemPrompt = \`
 \`;
 
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'system',
@@ -746,7 +744,7 @@ Por padrao, o cache dura 5 minutos. Voce pode estender para ate 1 hora:
 
 \```typescript
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -792,7 +790,7 @@ const result = await generateText({
 \```typescript
 // Primeira chamada: cria o cache
 const firstCall = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -814,7 +812,7 @@ const firstCall = await generateText({
 
 // Segunda chamada (dentro de 5 minutos): usa o cache
 const secondCall = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -839,7 +837,9 @@ const secondCall = await generateText({
 
 ## Reasoning (Pensamento)
 
-**Nota**: Reasoning esta disponivel apenas em Claude Sonnet e Opus, nao em Haiku.
+**Nota**: Reasoning agora esta disponivel em Claude Haiku 4.5, alem dos modelos Sonnet e Opus. Versoes anteriores do Haiku (3.x) nao suportavam thinking.
+
+Para workloads menores voce pode utilizar `claude-haiku-4-5` diretamente; o exemplo abaixo continua com Sonnet 4 para demonstrar um orcamento de thinking maior.
 
 \```typescript
 import { generateText } from 'ai';
@@ -873,7 +873,7 @@ import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
 
   // Prompt basico
   prompt: 'Escreva um poema sobre a primavera',
@@ -955,7 +955,7 @@ interface AnthropicProviderOptions {
 \```typescript
 // 🎯 Deterministico (para tarefas precisas)
 const precise = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Extraia os dados desta tabela',
   temperature: 0.0,
   topP: 0.1,
@@ -963,7 +963,7 @@ const precise = await generateText({
 
 // 🎨 Criativo (para escrita criativa)
 const creative = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Escreva uma historia de ficcao cientifica',
   temperature: 1.0,
   topP: 0.95,
@@ -972,7 +972,7 @@ const creative = await generateText({
 
 // ⚖️ Balanceado (para chat geral)
 const balanced = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Explique machine learning',
   temperature: 0.7,
   topP: 0.9,
@@ -1016,7 +1016,7 @@ export async function POST(req: Request) {
   try {
     const {
       messages,
-      model = 'claude-3-5-haiku-latest',
+      model = 'claude-haiku-4-5',
       temperature = 0.7,
     }: {
       messages: UIMessage[];
@@ -1067,7 +1067,7 @@ import { useChat } from '@ai-sdk/react';
 import { useState } from 'react';
 
 export default function ChatPage() {
-  const [model, setModel] = useState('claude-3-5-haiku-latest');
+  const [model, setModel] = useState('claude-haiku-4-5');
 
   const {
     messages,
@@ -1103,7 +1103,7 @@ export default function ChatPage() {
           onChange={(e) => setModel(e.target.value)}
           className="px-3 py-2 border rounded"
         >
-          <option value="claude-3-5-haiku-latest">Haiku 3.5</option>
+          <option value="claude-haiku-4-5">Haiku 4.5</option>
           <option value="claude-3-5-sonnet-20240620">Sonnet 3.5</option>
           <option value="claude-opus-4-20250514">Opus 4</option>
         </select>
@@ -1228,7 +1228,7 @@ export default function ChatWithAttachments() {
 \```typescript
 // ✅ BOM: Haiku para tarefas simples
 const summary = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Resuma este texto em 3 frases',
 });
 
@@ -1244,7 +1244,7 @@ const summary = await generateText({
 \```typescript
 // ✅ BOM: Cache para documentacao longa
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   messages: [
     {
       role: 'user',
@@ -1264,7 +1264,7 @@ const result = await generateText({
 
 // ❌ RUIM: Sem cache para contexto repetido
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: \`\${longDocumentation}\n\n\${query}\`,
 });
 \```
@@ -1274,7 +1274,7 @@ const result = await generateText({
 \```typescript
 // ✅ BOM: Streaming para respostas longas
 const result = streamText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Escreva um artigo longo',
 });
 
@@ -1284,7 +1284,7 @@ for await (const chunk of result.textStream) {
 
 // ❌ RUIM: Aguardar resposta completa
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Escreva um artigo longo',
 });
 console.log(result.text); // Usuario espera muito tempo
@@ -1296,7 +1296,7 @@ console.log(result.text); // Usuario espera muito tempo
 // ✅ BOM: Error handling robusto
 try {
   const result = await generateText({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     prompt: 'Hello',
   });
   console.log(result.text);
@@ -1314,7 +1314,7 @@ try {
 
 // ❌ RUIM: Sem error handling
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Hello',
 });
 \```
@@ -1324,14 +1324,14 @@ const result = await generateText({
 \```typescript
 // ✅ BOM: System prompt conciso
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   system: 'Voce e um assistente prestativo.',
   prompt: 'Explique TypeScript',
 });
 
 // ❌ RUIM: System prompt excessivo
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   system: \`
     Voce e um assistente muito prestativo e amigavel.
     Voce sempre responde de forma detalhada.
@@ -1387,12 +1387,12 @@ async function handleChat(request: any) {
 \```typescript
 // ✅ BOM: Log de metricas importantes
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Explique IA',
   onFinish: ({ text, usage, finishReason }) => {
     console.log({
       timestamp: new Date().toISOString(),
-      model: 'claude-3-5-haiku-latest',
+      model: 'claude-haiku-4-5',
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
       totalTokens: usage.totalTokens,
@@ -1418,7 +1418,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     messages,
     system: 'Voce e um assistente prestativo.',
   });
@@ -1461,7 +1461,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 
 async function analyzeImage(imageUrl: string) {
   const result = await generateText({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     messages: [
       {
         role: 'user',
@@ -1496,7 +1496,7 @@ import { z } from 'zod';
 
 async function extractProductInfo(description: string) {
   const result = await generateObject({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     schema: z.object({
       name: z.string(),
       price: z.number(),
@@ -1541,7 +1541,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     messages,
     tools: {
       getWeather: tool({
@@ -1602,7 +1602,7 @@ async function summarizePDF(pdfPath: string) {
   const pdfBuffer = fs.readFileSync(pdfPath);
 
   const result = await generateText({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     messages: [
       {
         role: 'user',
@@ -1648,7 +1648,7 @@ const knowledgeBase = \`
 
 async function answerQuestion(question: string) {
   const result = await generateText({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     messages: [
       {
         role: 'user',
@@ -1692,7 +1692,7 @@ import { z } from 'zod';
 import fs from 'fs/promises';
 
 const codeAssistant = streamText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   system: \`
     Voce e um assistente de programacao especializado em TypeScript e React.
     Voce pode ler, analisar e sugerir melhorias em codigo.
@@ -1779,7 +1779,7 @@ async function generateWithRetry(prompt: string, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await generateText({
-        model: anthropic('claude-3-5-haiku-latest'),
+        model: anthropic('claude-haiku-4-5'),
         prompt,
       });
     } catch (error) {
@@ -1808,7 +1808,7 @@ Error: Context length exceeded
 \```typescript
 // ❌ RUIM: Contexto muito longo
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: \`\${longDocument}\n\nResuma este documento\`,
 });
 
@@ -1819,7 +1819,7 @@ async function summarizeLongDocument(document: string) {
 
   for (const chunk of chunks) {
     const summary = await generateText({
-      model: anthropic('claude-3-5-haiku-latest'),
+      model: anthropic('claude-haiku-4-5'),
       prompt: \`Resuma este trecho:\n\n\${chunk}\`,
     });
     summaries.push(summary.text);
@@ -1827,7 +1827,7 @@ async function summarizeLongDocument(document: string) {
 
   // Resumo final dos resumos
   const finalSummary = await generateText({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     prompt: \`Combine estes resumos em um resumo final:\n\n\${summaries.join('\n\n')}\`,
   });
 
@@ -1847,7 +1847,7 @@ export const runtime = 'edge'; // 👈 Adicione esta linha
 
 export async function POST(req: Request) {
   const result = streamText({
-    model: anthropic('claude-3-5-haiku-latest'),
+    model: anthropic('claude-haiku-4-5'),
     // ...
   });
 
@@ -1893,7 +1893,7 @@ module.exports = {
 let totalTokens = 0;
 
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Explique IA',
   onFinish: ({ usage }) => {
     totalTokens += usage.totalTokens;
@@ -1925,7 +1925,7 @@ const result = await generateText({
 
 // ✅ BOM: ID completo
 const result = await generateText({
-  model: anthropic('claude-3-5-haiku-latest'),
+  model: anthropic('claude-haiku-4-5'),
   prompt: 'Hello',
 });
 \```
@@ -1954,7 +1954,7 @@ const result = await generateText({
 
 ### Comparacao de Modelos
 
-| Metrica | Haiku 3.5 | Sonnet 4 | Opus 4 |
+| Metrica | Haiku 4.5 | Sonnet 4 | Opus 4 |
 |---------|-----------|----------|---------|
 | Velocidade | ~3 segundos | ~10 segundos | ~20 segundos |
 | Custo (input) | $0.25 / 1M tokens | $3.00 / 1M tokens | $15.00 / 1M tokens |
@@ -1966,7 +1966,7 @@ const result = await generateText({
 
 ## Conclusao
 
-Este guia cobre todas as funcionalidades principais do Anthropic Provider com foco em Claude Haiku. Para desenvolvimento rapido e economico, Haiku e a escolha ideal, oferecendo:
+Este guia cobre todas as funcionalidades principais do Anthropic Provider com foco em Claude Haiku 4.5. Para desenvolvimento rapido e economico, Haiku 4.5 e a escolha ideal, oferecendo:
 
 - ⚡ **Performance excepcional** (~3 segundos para respostas)
 - 💰 **Custo reduzido** (~90% mais barato que Opus)
