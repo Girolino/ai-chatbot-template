@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useConvexAuth } from 'convex/react';
 import type { Doc, Id } from '@/convex/_generated/dataModel';
 import { api } from '@/convex/_generated/api';
@@ -74,6 +74,7 @@ type ProjectSidebarProps = {
     projectId?: Id<'projects'> | null;
   }) => Promise<void>;
   onDeleteChat?: (chatId: Id<'chats'>) => void;
+  headerContent?: ReactNode;
 };
 
 const CHAT_FALLBACK_TITLE = 'Untitled chat';
@@ -87,6 +88,7 @@ export function ProjectSidebar({
   onCreateChat,
   onMoveChat,
   onDeleteChat,
+  headerContent,
 }: ProjectSidebarProps) {
   const { isAuthenticated } = useConvexAuth();
   const projects = useQuery(
@@ -250,10 +252,14 @@ export function ProjectSidebar({
         <SidebarHeader className="gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex flex-col">
-              <span className="text-xs font-semibold uppercase text-muted-foreground/70">
-                Workspace
-              </span>
-              <span className="text-sm font-semibold tracking-tight">Projects &amp; Chats</span>
+              {headerContent ?? (
+                <>
+                  <span className="text-xs font-semibold uppercase text-muted-foreground/70">
+                    Workspace
+                  </span>
+                  <span className="text-sm font-semibold tracking-tight">Projects &amp; Chats</span>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-1.5">
               <Tooltip>
