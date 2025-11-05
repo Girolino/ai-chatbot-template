@@ -5,7 +5,14 @@ import { cn } from "@/lib/utils";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  Children,
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 type BranchContextType = {
   currentBranch: number;
@@ -82,16 +89,24 @@ export type BranchMessagesProps = HTMLAttributes<HTMLDivElement>;
 
 export const BranchMessages = ({ children, ...props }: BranchMessagesProps) => {
   const { currentBranch, setBranches, branches } = useBranch();
-  const childrenArray = Array.isArray(children) ? children : [children];
+  const childElements = useMemo(
+    () => Children.toArray(children) as ReactElement[],
+    [children]
+  );
 
   // Use useEffect to update branches when they change
   useEffect(() => {
-    if (branches.length !== childrenArray.length) {
-      setBranches(childrenArray);
-    }
-  }, [childrenArray, branches, setBranches]);
+    const hasDifferentLength = branches.length !== childElements.length;
+    const hasDifferentItems =
+      !hasDifferentLength &&
+      branches.some((branch, index) => branch !== childElements[index]);
 
-  return childrenArray.map((branch, index) => (
+    if (hasDifferentLength || hasDifferentItems) {
+      setBranches(childElements);
+    }
+  }, [childElements, branches, setBranches]);
+
+  return childElements.map((branch, index) => (
     <div
       className={cn(
         "grid gap-2 overflow-hidden [&>div]:pb-0",

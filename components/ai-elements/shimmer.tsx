@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import {
   type CSSProperties,
-  type ElementType,
+  type ComponentType,
   type JSX,
   memo,
   useMemo,
@@ -12,10 +12,20 @@ import {
 
 export type TextShimmerProps = {
   children: string;
-  as?: ElementType;
+  as?: keyof JSX.IntrinsicElements;
   className?: string;
   duration?: number;
   spread?: number;
+};
+
+const motionComponentMap: Partial<
+  Record<keyof JSX.IntrinsicElements, ComponentType<Record<string, unknown>>>
+> = {
+  span: motion.span,
+  p: motion.p,
+  div: motion.div,
+  label: motion.label,
+  strong: motion.strong,
 };
 
 const ShimmerComponent = ({
@@ -25,9 +35,8 @@ const ShimmerComponent = ({
   duration = 2,
   spread = 2,
 }: TextShimmerProps) => {
-  const MotionComponent = motion.create(
-    Component as keyof JSX.IntrinsicElements
-  );
+  const MotionComponent =
+    motionComponentMap[Component] ?? motionComponentMap.span ?? motion.span;
 
   const dynamicSpread = useMemo(
     () => (children?.length ?? 0) * spread,

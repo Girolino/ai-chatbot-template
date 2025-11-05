@@ -67,6 +67,7 @@ import {
   useRef,
   useState,
 } from "react";
+import Image from "next/image";
 // ============================================================================
 // Provider Context & Types
 // ============================================================================
@@ -283,12 +284,13 @@ export function PromptInputAttachment({
         >
           <div className="relative size-5 shrink-0">
             <div className="absolute inset-0 flex size-5 items-center justify-center overflow-hidden rounded bg-background transition-opacity group-hover:opacity-0">
-              {isImage ? (
-                <img
+              {isImage && data.url ? (
+                <Image
                   alt={filename || "attachment"}
                   className="size-5 object-cover"
                   height={20}
                   src={data.url}
+                  unoptimized
                   width={20}
                 />
               ) : (
@@ -317,13 +319,14 @@ export function PromptInputAttachment({
       </HoverCardTrigger>
       <PromptInputHoverCardContent className="w-auto p-2">
         <div className="w-auto space-y-3">
-          {isImage && (
+          {isImage && data.url && (
             <div className="flex max-h-96 w-96 items-center justify-center overflow-hidden rounded-md border">
-              <img
+              <Image
                 alt={filename || "attachment preview"}
                 className="max-h-full max-w-full object-contain"
                 height={384}
                 src={data.url}
+                unoptimized
                 width={448}
               />
             </div>
@@ -498,36 +501,56 @@ export const PromptInput = ({
     [matchesAccept, maxFiles, maxFileSize, onError]
   );
 
-  const add = usingProvider
-    ? (files: File[] | FileList) => controller.attachments.add(files)
-    : addLocal;
+  const add = useCallback(
+    (filesToAdd: File[] | FileList) => {
+      if (usingProvider) {
+        controller?.attachments.add(filesToAdd);
+        return;
+      }
+      addLocal(filesToAdd);
+    },
+    [usingProvider, controller, addLocal]
+  );
 
-  const remove = usingProvider
-    ? (id: string) => controller.attachments.remove(id)
-    : (id: string) =>
-        setItems((prev) => {
-          const found = prev.find((file) => file.id === id);
-          if (found?.url) {
-            URL.revokeObjectURL(found.url);
-          }
-          return prev.filter((file) => file.id !== id);
-        });
+  const remove = useCallback(
+    (id: string) => {
+      if (usingProvider) {
+        controller?.attachments.remove(id);
+        return;
+      }
+      setItems((prev) => {
+        const found = prev.find((file) => file.id === id);
+        if (found?.url) {
+          URL.revokeObjectURL(found.url);
+        }
+        return prev.filter((file) => file.id !== id);
+      });
+    },
+    [usingProvider, controller]
+  );
 
-  const clear = usingProvider
-    ? () => controller.attachments.clear()
-    : () =>
-        setItems((prev) => {
-          for (const file of prev) {
-            if (file.url) {
-              URL.revokeObjectURL(file.url);
-            }
-          }
-          return [];
-        });
+  const clear = useCallback(() => {
+    if (usingProvider) {
+      controller?.attachments.clear();
+      return;
+    }
+    setItems((prev) => {
+      for (const file of prev) {
+        if (file.url) {
+          URL.revokeObjectURL(file.url);
+        }
+      }
+      return [];
+    });
+  }, [usingProvider, controller]);
 
-  const openFileDialog = usingProvider
-    ? () => controller.attachments.openFileDialog()
-    : openFileDialogLocal;
+  const openFileDialog = useCallback(() => {
+    if (usingProvider) {
+      controller?.attachments.openFileDialog();
+      return;
+    }
+    openFileDialogLocal();
+  }, [usingProvider, controller, openFileDialogLocal]);
 
   // Let provider know about our hidden file input so external menus can call openFileDialog()
   useEffect(() => {
@@ -652,14 +675,16 @@ export const PromptInput = ({
 
     // Convert blob URLs to data URLs asynchronously
     Promise.all(
-      files.map(async ({ id, ...item }) => {
-        if (item.url && item.url.startsWith("blob:")) {
+      files.map(async (item) => {
+        const { id: ignoredId, ...rest } = item;
+        void ignoredId;
+        if (rest.url && rest.url.startsWith("blob:")) {
           return {
-            ...item,
-            url: await convertBlobUrlToDataUrl(item.url),
-          };
+            ...rest,
+            url: await convertBlobUrlToDataUrl(rest.url),
+          } as FileUIPart;
         }
-        return item;
+        return rest as FileUIPart;
       })
     ).then((convertedFiles: FileUIPart[]) => {
       try {
@@ -684,7 +709,7 @@ export const PromptInput = ({
             controller.textInput.clear();
           }
         }
-      } catch (error) {
+      } catch {
         // Don't clear on error - user may want to retry
       }
     });
@@ -964,13 +989,13 @@ interface SpeechRecognition extends EventTarget {
   lang: string;
   start(): void;
   stop(): void;
-  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
   onresult:
-    | ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any)
+    | ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void)
     | null;
   onerror:
-    | ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any)
+    | ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void)
     | null;
 }
 
@@ -1025,70 +1050,77 @@ export const PromptInputSpeechButton = ({
   ...props
 }: PromptInputSpeechButtonProps) => {
   const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(
-    null
-  );
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-
+  const recognition = useMemo<SpeechRecognition | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    const SpeechRecognitionCtor =
+      window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) {
+      return null;
+    }
+    try {
+      return new SpeechRecognitionCtor();
+    } catch {
+      return null;
+    }
+  }, []);
   useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
-    ) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      const speechRecognition = new SpeechRecognition();
-
-      speechRecognition.continuous = true;
-      speechRecognition.interimResults = true;
-      speechRecognition.lang = "en-US";
-
-      speechRecognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      speechRecognition.onend = () => {
-        setIsListening(false);
-      };
-
-      speechRecognition.onresult = (event) => {
-        let finalTranscript = "";
-
-        const results = Array.from(event.results);
-
-        for (const result of results) {
-          if (result.isFinal) {
-            finalTranscript += result[0]?.transcript ?? "";
-          }
-        }
-
-        if (finalTranscript && textareaRef?.current) {
-          const textarea = textareaRef.current;
-          const currentValue = textarea.value;
-          const newValue =
-            currentValue + (currentValue ? " " : "") + finalTranscript;
-
-          textarea.value = newValue;
-          textarea.dispatchEvent(new Event("input", { bubbles: true }));
-          onTranscriptionChange?.(newValue);
-        }
-      };
-
-      speechRecognition.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
-        setIsListening(false);
-      };
-
-      recognitionRef.current = speechRecognition;
-      setRecognition(speechRecognition);
+    if (!recognition) {
+      return;
     }
 
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
+    const handleStart: EventListener = () => {
+      setIsListening(true);
+    };
+
+    const handleEnd: EventListener = () => {
+      setIsListening(false);
+    };
+
+    const handleResult: EventListener = (event) => {
+      const speechEvent = event as SpeechRecognitionEvent;
+      let finalTranscript = "";
+
+      const results = Array.from(speechEvent.results);
+
+      for (const result of results) {
+        if (result.isFinal) {
+          finalTranscript += result[0]?.transcript ?? "";
+        }
+      }
+
+      if (finalTranscript && textareaRef?.current) {
+        const textarea = textareaRef.current;
+        const currentValue = textarea.value;
+        const newValue =
+          currentValue + (currentValue ? " " : "") + finalTranscript;
+
+        textarea.value = newValue;
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        onTranscriptionChange?.(newValue);
       }
     };
-  }, [textareaRef, onTranscriptionChange]);
+
+    const handleError: EventListener = (event) => {
+      const errorEvent = event as SpeechRecognitionErrorEvent;
+      console.error("Speech recognition error:", errorEvent.error);
+      setIsListening(false);
+    };
+
+    recognition.addEventListener("start", handleStart);
+    recognition.addEventListener("end", handleEnd);
+    recognition.addEventListener("result", handleResult);
+    recognition.addEventListener("error", handleError);
+
+    return () => {
+      recognition.removeEventListener("start", handleStart);
+      recognition.removeEventListener("end", handleEnd);
+      recognition.removeEventListener("result", handleResult);
+      recognition.removeEventListener("error", handleError);
+      recognition.stop();
+    };
+  }, [recognition, textareaRef, onTranscriptionChange]);
 
   const toggleListening = useCallback(() => {
     if (!recognition) {
