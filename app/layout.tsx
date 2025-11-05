@@ -26,9 +26,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+      >
         <ConvexClerkProvider>
-          <AppProviders>{children}</AppProviders>
+          <AppProviders>
+            <div className="min-h-svh">{children}</div>
+          </AppProviders>
         </ConvexClerkProvider>
       </body>
     </html>

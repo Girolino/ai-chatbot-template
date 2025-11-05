@@ -8,12 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { UploadIcon } from 'lucide-react';
 import { put } from '@vercel/blob/client';
+import { cn } from '@/lib/utils';
 
 type ProjectDocumentsPanelProps = {
   project: Doc<'projects'> | null;
+  className?: string;
 };
 
-export function ProjectDocumentsPanel({ project }: ProjectDocumentsPanelProps) {
+export function ProjectDocumentsPanel({ project, className }: ProjectDocumentsPanelProps) {
   const documents = useQuery(
     api.documents.list,
     project ? { projectId: project._id } : ('skip' as const),
@@ -22,50 +24,52 @@ export function ProjectDocumentsPanel({ project }: ProjectDocumentsPanelProps) {
   if (!project) return null;
 
   return (
-    <div className="border-b bg-muted/30 px-6 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">
-            Knowledge base for {project.name}
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Upload PDFs, Markdown or text files to transform them into searchable memory.
-          </p>
+    <div className={cn('border-b bg-muted/30', className)}>
+      <div className="px-4 py-4 md:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">
+              Knowledge base for {project.name}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Upload PDFs, Markdown or text files to transform them into searchable memory.
+            </p>
+          </div>
+          <DocumentUploadButton projectId={project._id} />
         </div>
-        <DocumentUploadButton projectId={project._id} />
-      </div>
 
-      <ScrollArea className="mt-3 max-h-48 rounded-md border bg-background">
-        <div className="divide-y">
-          {documents && documents.length > 0 ? (
-            documents.map((document: Doc<'projectDocuments'>) => (
-              <article
-                key={document._id}
-                className="flex items-center justify-between gap-4 px-4 py-3 text-sm"
-              >
-                <div>
-                  <div className="font-medium text-foreground">{document.filename}</div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    <span>{formatBytes(document.size)}</span>
-                    <span>{document.mimeType}</span>
-                    {document.processedAt ? (
-                      <span>
-                        Processed {new Date(document.processedAt).toLocaleString()}
-                      </span>
-                    ) : null}
-                    {document.error ? <span className="text-destructive">{document.error}</span> : null}
+        <ScrollArea className="mt-3 max-h-48 rounded-md border bg-background">
+          <div className="divide-y">
+            {documents && documents.length > 0 ? (
+              documents.map((document: Doc<'projectDocuments'>) => (
+                <article
+                  key={document._id}
+                  className="flex items-center justify-between gap-4 px-4 py-3 text-sm"
+                >
+                  <div>
+                    <div className="font-medium text-foreground">{document.filename}</div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span>{formatBytes(document.size)}</span>
+                      <span>{document.mimeType}</span>
+                      {document.processedAt ? (
+                        <span>
+                          Processed {new Date(document.processedAt).toLocaleString()}
+                        </span>
+                      ) : null}
+                      {document.error ? <span className="text-destructive">{document.error}</span> : null}
+                    </div>
                   </div>
-                </div>
-                <Badge variant={statusToVariant(document.status)}>{formatStatus(document.status)}</Badge>
-              </article>
-            ))
-          ) : (
-            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-              No documents yet. Upload one to kick off retrieval-augmented responses.
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+                  <Badge variant={statusToVariant(document.status)}>{formatStatus(document.status)}</Badge>
+                </article>
+              ))
+            ) : (
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                No documents yet. Upload one to kick off retrieval-augmented responses.
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   );
 }
