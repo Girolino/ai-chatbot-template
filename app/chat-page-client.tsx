@@ -420,8 +420,8 @@ const ChatPageClient = ({ sidebarHeader }: ChatPageClientProps) => {
         onDeleteChat={handleChatDeleted}
         headerContent={sidebarHeader}
       />
-      <SidebarInset className="flex min-h-svh flex-1 flex-col">
-        <header className="sticky top-0 z-10 border-b bg-background">
+      <SidebarInset className="flex h-svh flex-1 flex-col overflow-hidden">
+        <header className="flex-none border-b bg-background">
           <div className="flex h-16 items-center gap-2 px-4 md:px-6">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -466,143 +466,134 @@ const ChatPageClient = ({ sidebarHeader }: ChatPageClientProps) => {
           </div>
         </header>
 
-        <ProjectDocumentsPanel
-          project={selectedProject}
-          className={CHAT_SHELL_CLASS}
-        />
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <div className={`${CHAT_SHELL_CLASS} space-y-6 py-6`}>
+              <ProjectDocumentsPanel project={selectedProject} />
 
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {activeChat ? (
-            <>
-              <div className="flex-1 overflow-hidden">
-                <div className={`${CHAT_SHELL_CLASS} h-full pb-6`}>
-                  <Conversation className="h-full">
-                    <ConversationContent>
-                      <TextNotePanel />
-                      {conversationEmpty
-                        ? null
-                        : typedMessages.map((message) => (
-                            <ChatMessageBlock
-                              key={message.id}
-                              message={message}
-                              isLast={typedMessages.at(-1)?.id === message.id}
-                              status={status}
-                              onRegenerate={regenerate}
-                            />
-                          ))}
-                      {status === 'submitted' && <Loader />}
-                    </ConversationContent>
-                    <ConversationScrollButton />
-                  </Conversation>
-                </div>
-              </div>
-
-              <div className="border-t bg-background">
-                <div className={`${CHAT_SHELL_CLASS} py-4`}>
-                  <PromptInput onSubmit={handleSubmit} className="w-full" globalDrop multiple>
-                    <PromptInputHeader>
-                      <PromptInputAttachments>
-                        {(attachment) => <PromptInputAttachment data={attachment} />}
-                      </PromptInputAttachments>
-                    </PromptInputHeader>
-                    <PromptInputBody>
-                      <PromptInputTextarea
-                        onChange={(event) => setInput(event.target.value)}
-                        value={input}
-                        placeholder={
-                          selectedProject
-                            ? `Ask a question or request an action for ${selectedProject.name}…`
-                            : 'Ask a question…'
-                        }
-                      />
-                    </PromptInputBody>
-                    <PromptInputFooter>
-                      <PromptInputTools>
-                        <PromptInputActionMenu>
-                          <PromptInputActionMenuTrigger
-                            aria-pressed={menuActive}
-                            aria-label="Open tools menu"
-                            variant={menuActive ? 'default' : 'ghost'}
+              {activeChat ? (
+                <Conversation>
+                  <ConversationContent className="space-y-4 pb-48">
+                    <TextNotePanel />
+                    {conversationEmpty
+                      ? null
+                      : typedMessages.map((message) => (
+                          <ChatMessageBlock
+                            key={message.id}
+                            message={message}
+                            isLast={typedMessages.at(-1)?.id === message.id}
+                            status={status}
+                            onRegenerate={regenerate}
                           />
-                          <PromptInputActionMenuContent>
-                            <Command className="w-64 gap-1 p-1">
-                              <CommandInput placeholder="Search menu" />
-                              <CommandList>
-                                <CommandGroup heading="Tools">
-                                  <MenuAttachmentItem />
-                                  <MenuToggleItem
-                                    icon={TimerIcon}
-                                    label="Extended thinking"
-                                    checked={extendedThinking}
-                                    onToggle={(value) => setExtendedThinking(value)}
-                                  />
-                                </CommandGroup>
-                                <CommandSeparator />
-                                <CommandGroup heading="Search">
-                                  <MenuToggleItem
-                                    icon={GlobeIcon}
-                                    label="Web search"
-                                    checked={webSearch}
-                                    onToggle={(value) => setWebSearch(value)}
-                                  />
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PromptInputActionMenuContent>
-                        </PromptInputActionMenu>
-                        <PromptInputButton
-                          aria-pressed={extendedThinking}
-                          aria-label="Toggle extended thinking"
-                          title="Extended thinking"
-                          variant={extendedThinking ? 'default' : 'ghost'}
-                          onClick={() => setExtendedThinking((prev) => !prev)}
-                        >
-                          <TimerIcon size={16} />
-                          <span>Think</span>
-                        </PromptInputButton>
-                      </PromptInputTools>
-                      <PromptInputSubmit disabled={!input && !status} status={status} />
-                    </PromptInputFooter>
+                        ))}
+                    {status === 'submitted' && <Loader />}
+                  </ConversationContent>
+                  <ConversationScrollButton />
+                </Conversation>
+              ) : selectedProject ? (
+                <ProjectChatList
+                  project={selectedProject}
+                  activeChatId={activeChatId}
+                  onCreateChat={(projectId) => handleCreateChat({ projectId })}
+                  onSelectChat={handleChatSelect}
+                  onMoveChat={handleMoveChat}
+                  projects={projects}
+                />
+              ) : (
+                <div className="grid min-h-[40vh] place-items-center text-center text-sm text-muted-foreground">
+                  <div>
+                    <p className="text-base font-medium text-foreground">Welcome to your workspace.</p>
+                    <p className="mt-2">
+                      Start a new chat or create a project to organize conversations, documents and
+                      retrieval memories.
+                    </p>
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                      <Button onClick={() => handleCreateChat({ projectId: null })}>
+                        <PlusIcon className="mr-2 size-4" />
+                        New chat
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
+          {activeChat ? (
+            <div className="absolute inset-x-0 bottom-0 z-10">
+              <div className={`${CHAT_SHELL_CLASS} pb-4`}>
+                <PromptInput onSubmit={handleSubmit} className="w-full bg-background/80 backdrop-blur-xl dark:bg-background/50" globalDrop multiple>
+                  <PromptInputHeader>
                     <PromptInputAttachments>
                       {(attachment) => <PromptInputAttachment data={attachment} />}
                     </PromptInputAttachments>
-                  </PromptInput>
-                </div>
+                  </PromptInputHeader>
+                  <PromptInputBody>
+                    <PromptInputTextarea
+                      onChange={(event) => setInput(event.target.value)}
+                      value={input}
+                      placeholder={
+                        selectedProject
+                          ? `Ask a question or request an action for ${selectedProject.name}…`
+                          : 'Ask a question…'
+                      }
+                    />
+                  </PromptInputBody>
+                  <PromptInputFooter>
+                    <PromptInputTools>
+                      <PromptInputActionMenu>
+                        <PromptInputActionMenuTrigger
+                          aria-pressed={menuActive}
+                          aria-label="Open tools menu"
+                          variant={menuActive ? 'default' : 'ghost'}
+                        />
+                        <PromptInputActionMenuContent>
+                          <Command className="w-64 gap-1 p-1">
+                            <CommandInput placeholder="Search menu" />
+                            <CommandList>
+                              <CommandGroup heading="Tools">
+                                <MenuAttachmentItem />
+                                <MenuToggleItem
+                                  icon={TimerIcon}
+                                  label="Extended thinking"
+                                  checked={extendedThinking}
+                                  onToggle={(value) => setExtendedThinking(value)}
+                                />
+                              </CommandGroup>
+                              <CommandSeparator />
+                              <CommandGroup heading="Search">
+                                <MenuToggleItem
+                                  icon={GlobeIcon}
+                                  label="Web search"
+                                  checked={webSearch}
+                                  onToggle={(value) => setWebSearch(value)}
+                                />
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PromptInputActionMenuContent>
+                      </PromptInputActionMenu>
+                      <PromptInputButton
+                        aria-pressed={extendedThinking}
+                        aria-label="Toggle extended thinking"
+                        title="Extended thinking"
+                        variant={extendedThinking ? 'default' : 'ghost'}
+                        onClick={() => setExtendedThinking((prev) => !prev)}
+                      >
+                        <TimerIcon size={16} />
+                        <span>Think</span>
+                      </PromptInputButton>
+                    </PromptInputTools>
+                    <PromptInputSubmit disabled={!input && !status} status={status} />
+                  </PromptInputFooter>
+
+                  <PromptInputAttachments>
+                    {(attachment) => <PromptInputAttachment data={attachment} />}
+                  </PromptInputAttachments>
+                </PromptInput>
               </div>
-            </>
-          ) : selectedProject ? (
-            <div className={`${CHAT_SHELL_CLASS} flex flex-1 flex-col py-6`}>
-              <ProjectChatList
-                project={selectedProject}
-                activeChatId={activeChatId}
-                onCreateChat={(projectId) => handleCreateChat({ projectId })}
-                onSelectChat={handleChatSelect}
-                onMoveChat={handleMoveChat}
-                projects={projects}
-              />
             </div>
-          ) : (
-            <div className="flex flex-1 overflow-auto">
-              <div
-                className={`${CHAT_SHELL_CLASS} grid flex-1 place-items-center text-center text-sm text-muted-foreground`}
-              >
-                <div>
-                  <p className="text-base font-medium text-foreground">Welcome to your workspace.</p>
-                  <p className="mt-2">
-                    Start a new chat or create a project to organize conversations, documents and
-                    retrieval memories.
-                  </p>
-                  <div className="mt-4 flex items-center justify-center gap-3">
-                    <Button onClick={() => handleCreateChat({ projectId: null })}>
-                      <PlusIcon className="mr-2 size-4" />
-                      New chat
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </SidebarInset>
     </SidebarProvider>
