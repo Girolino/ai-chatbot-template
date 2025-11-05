@@ -1,13 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation, useQuery } from 'convex/react';
-import { useConvexAuth } from 'convex/react';
+import { useMutation, useQuery, useConvexAuth } from 'convex/react';
 import type { Doc, Id } from '@/convex/_generated/dataModel';
 import { api } from '@/convex/_generated/api';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,23 +19,41 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { LucideIcon } from 'lucide-react';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   FolderIcon,
+  FolderPlusIcon,
   MoreHorizontalIcon,
+  PencilIcon,
   PlusIcon,
   SearchIcon,
-  FolderPlusIcon,
-  PencilIcon,
   TrashIcon,
 } from 'lucide-react';
 import { Shimmer } from '@/components/ai-elements/shimmer';
+
 type SidebarChatSelection = {
   chatId: Id<'chats'>;
   clientId: string;
@@ -61,40 +75,6 @@ type ProjectSidebarProps = {
   }) => Promise<void>;
   onDeleteChat?: (chatId: Id<'chats'>) => void;
 };
-
-type SidebarActionProps = {
-  icon: LucideIcon;
-  label: string;
-  onClick?: () => void;
-  disabled?: boolean;
-};
-
-const SidebarAction = ({ icon: Icon, label, onClick, disabled }: SidebarActionProps) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={disabled}
-    className={cn(
-      'flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm transition',
-      'text-muted-foreground hover:bg-background hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60',
-    )}
-  >
-    <Icon className="size-4" />
-    <span>{label}</span>
-  </button>
-);
-
-type SidebarSectionProps = {
-  title: string;
-  children: React.ReactNode;
-};
-
-const SidebarSection = ({ title, children }: SidebarSectionProps) => (
-  <section className="px-3 py-2">
-    <p className="px-2 text-xs font-semibold uppercase text-muted-foreground">{title}</p>
-    <div className="mt-1 space-y-1">{children}</div>
-  </section>
-);
 
 const CHAT_FALLBACK_TITLE = 'Untitled chat';
 
@@ -121,21 +101,24 @@ export function ProjectSidebar({
   const createProject = useMutation(api.projects.create);
   const renameChat = useMutation(api.chats.rename);
   const deleteChat = useMutation(api.chats.remove);
+
   const [isProjectDialogOpen, setProjectDialogOpen] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [isCreatingProject, setCreatingProject] = useState(false);
+
   const [isRenameDialogOpen, setRenameDialogOpen] = useState(false);
   const [chatBeingRenamed, setChatBeingRenamed] = useState<Doc<'chats'> | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setRenaming] = useState(false);
+
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chatBeingDeleted, setChatBeingDeleted] = useState<Doc<'chats'> | null>(null);
   const [isDeleting, setDeleting] = useState(false);
 
   const [isSearchActive, setSearchActive] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (projects) {
@@ -145,8 +128,8 @@ export function ProjectSidebar({
 
   useEffect(() => {
     if (isSearchActive) {
-      const timeout = setTimeout(() => searchInputRef.current?.focus(), 50);
-      return () => clearTimeout(timeout);
+      const timer = window.setTimeout(() => searchInputRef.current?.focus(), 80);
+      return () => window.clearTimeout(timer);
     }
     return undefined;
   }, [isSearchActive]);
@@ -160,10 +143,7 @@ export function ProjectSidebar({
     if (!chats) return [];
     if (!searchQuery.trim()) return chats;
     const term = searchQuery.toLowerCase();
-    return chats.filter((chat) => {
-      const title = chat.title ?? '';
-      return title.toLowerCase().includes(term);
-    });
+    return chats.filter((chat) => (chat.title ?? '').toLowerCase().includes(term));
   }, [chats, searchQuery]);
 
   const handleSelectProject = (project: Doc<'projects'> | null) => {
@@ -223,9 +203,8 @@ export function ProjectSidebar({
     const chat = chatBeingRenamed;
     if (!chat) return;
     const nextTitle = renameValue.trim();
-    if (!nextTitle) {
-      return;
-    }
+    if (!nextTitle) return;
+
     try {
       setRenaming(true);
       await renameChat({ chatId: chat._id, title: nextTitle });
@@ -244,6 +223,7 @@ export function ProjectSidebar({
   const handleDeleteChat = async () => {
     const chat = chatBeingDeleted;
     if (!chat) return;
+
     try {
       setDeleting(true);
       await deleteChat({ chatId: chat._id });
@@ -255,237 +235,275 @@ export function ProjectSidebar({
     }
   };
 
+  const toggleSearch = () => {
+    setSearchActive((previous) => {
+      if (previous) {
+        setSearchQuery('');
+      }
+      return !previous;
+    });
+  };
+
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-r bg-muted/40">
-      <div className="border-b px-3 py-4">
-        <SidebarAction
-          icon={PlusIcon}
-          label="New chat"
-          onClick={() => onCreateChat({ projectId: null })}
-        />
-        <SidebarAction
-          icon={SearchIcon}
-          label="Search chats"
-          onClick={() => setSearchActive((value) => !value)}
-        />
-      </div>
-
-      <ScrollArea className="flex-1">
-        <SidebarSection title="Projects">
-          <Dialog open={isProjectDialogOpen} onOpenChange={setProjectDialogOpen}>
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  'flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm transition text-muted-foreground hover:bg-background hover:text-foreground',
-                )}
-              >
-                <FolderPlusIcon className="size-4" />
-                <span>New project</span>
-              </button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create a new project</DialogTitle>
-                <DialogDescription>
-                  Projects group chats, documents and memories under a shared workspace.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="project-name">
-                    Name
-                  </label>
-                  <Input
-                    id="project-name"
-                    placeholder="Growth experiments"
-                    value={projectName}
-                    onChange={(event) => setProjectName(event.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    className="text-sm font-medium text-foreground"
-                    htmlFor="project-description"
-                  >
-                    Description
-                  </label>
-                  <Textarea
-                    id="project-description"
-                    placeholder="Optional context to help the assistant reason inside this project."
-                    value={projectDescription}
-                    onChange={(event) => setProjectDescription(event.target.value)}
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setProjectDialogOpen(false)}
-                  disabled={isCreatingProject}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateProject} disabled={isCreatingProject || !projectName}>
-                  {isCreatingProject ? 'Creating…' : 'Create project'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {projects && projects.length > 0 ? (
-            projects.map((project) => {
-              const isActive = selectedProjectId === project._id;
-              return (
-                <div
-                  key={project._id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleSelectProject(project)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      handleSelectProject(project);
-                    }
-                  }}
-                  className={cn(
-                    'flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition outline-none',
-                    isActive
-                      ? 'bg-background text-foreground shadow-sm ring-1 ring-ring'
-                      : 'text-muted-foreground hover:bg-background/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring',
-                  )}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <FolderIcon className="size-4" />
-                    <span className="truncate">{project.name}</span>
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {formatProjectCount(chats, project._id)}
-                  </span>
-                </div>
-              );
-            })
-          ) : (
-            <div className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
-              <p className="mb-3">Organize conversations by creating your first project.</p>
-              <Button size="sm" onClick={() => setProjectDialogOpen(true)}>
-                <FolderPlusIcon className="mr-2 size-4" />
-                Create project
-              </Button>
+    <>
+      <Sidebar className="bg-sidebar text-sidebar-foreground" collapsible="icon">
+        <SidebarHeader className="gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold uppercase text-muted-foreground/70">
+                Workspace
+              </span>
+              <span className="text-sm font-semibold tracking-tight">Projects &amp; Chats</span>
             </div>
-          )}
-        </SidebarSection>
-
-        <SidebarSection title="Chats">
+            <div className="flex items-center gap-1.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => {
+                      void onCreateChat({ projectId: selectedProjectId ?? null });
+                    }}
+                  >
+                    <PlusIcon className="size-4" />
+                    <span className="sr-only">New chat</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="end">
+                  Start a new chat
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant={isSearchActive ? 'default' : 'ghost'}
+                    onClick={toggleSearch}
+                    aria-pressed={isSearchActive}
+                  >
+                    <SearchIcon className="size-4" />
+                    <span className="sr-only">Toggle chat search</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="end">
+                  Search chats
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
           {isSearchActive ? (
-            <Input
+            <SidebarInput
               ref={searchInputRef}
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search chats…"
-              className="mb-1 h-8"
+              className="pl-8"
             />
           ) : null}
-          {filteredChats && filteredChats.length > 0 ? (
-            filteredChats.map((chat) => {
-              const isActive = selectedChatId === chat._id;
-              const project = chat.projectId ? projectsById.get(chat.projectId) : null;
-              const isGeneratingTitle =
-                chat.titleStatus === 'pending' || chat.titleStatus === 'generating';
-              const titleNode = isGeneratingTitle ? (
-                <Shimmer as="span" className="truncate">
-                  Generating title…
-                </Shimmer>
+        </SidebarHeader>
+
+        <SidebarContent className="gap-2">
+          <SidebarGroup>
+            <SidebarGroupLabel>Projects</SidebarGroupLabel>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SidebarGroupAction type="button" onClick={() => setProjectDialogOpen(true)}>
+                  <FolderPlusIcon className="size-4" />
+                  <span className="sr-only">Create project</span>
+                </SidebarGroupAction>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">New project</TooltipContent>
+            </Tooltip>
+            <SidebarGroupContent>
+              {projects && projects.length > 0 ? (
+                <SidebarMenu>
+                  {projects.map((project) => {
+                    const isActive = selectedProjectId === project._id;
+                    return (
+                      <SidebarMenuItem key={project._id}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          onClick={() => handleSelectProject(project)}
+                          className="justify-between"
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <FolderIcon className="size-4" />
+                            <span className="truncate">{project.name}</span>
+                          </span>
+                        </SidebarMenuButton>
+                        <SidebarMenuBadge>{formatProjectCount(chats, project._id)}</SidebarMenuBadge>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
               ) : (
-                <span className="truncate">
-                  {chat.title?.trim() || CHAT_FALLBACK_TITLE}
-                </span>
-              );
-              return (
-                <div
-                  key={chat._id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleSelectChat(chat)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      handleSelectChat(chat);
-                    }
-                  }}
-                  className={cn(
-                    'group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition outline-none',
-                    isActive
-                      ? 'bg-background text-foreground shadow-sm ring-1 ring-ring'
-                      : 'text-muted-foreground hover:bg-background/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring',
-                  )}
-                >
-                  <span className="flex-1 truncate">
-                    {titleNode}
-                    {project ? (
-                      <span className="ml-2 inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        <FolderIcon className="size-3" />
-                        {project.name}
-                      </span>
-                    ) : null}
-                  </span>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <div className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground">
-                        <MoreHorizontalIcon className="size-4" />
-                      </div>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-56">
-                      <DropdownMenuItem onSelect={() => openRenameDialog(chat)}>
-                        <PencilIcon className="mr-2 size-4" />
-                        <span>Rename chat</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onSelect={() => openDeleteDialog(chat)}
-                      >
-                        <TrashIcon className="mr-2 size-4" />
-                        <span>Delete chat</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <FolderIcon className="mr-2 size-4" />
-                          <span>Move to project</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent>
-                          <DropdownMenuItem onSelect={() => handleMoveChat(chat, null)}>
-                            <span className="ml-6 text-sm">No project</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {projects?.map((projectOption) => (
-                            <DropdownMenuItem
-                              key={projectOption._id}
-                              onSelect={() => handleMoveChat(chat, projectOption._id)}
-                            >
-                              <FolderIcon className="mr-2 size-4" />
-                              <span>{projectOption.name}</span>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div className="mt-2 rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+                  <p className="mb-3">Organize conversations by creating your first project.</p>
+                  <Button
+                    size="sm"
+                    onClick={() => setProjectDialogOpen(true)}
+                    className="w-full justify-center"
+                  >
+                    <FolderPlusIcon className="mr-2 size-4" />
+                    Create project
+                  </Button>
                 </div>
-              );
-            })
-          ) : (
-            <p className="px-2 py-3 text-sm text-muted-foreground">
-              {searchQuery ? 'No chats match your search.' : 'Start a conversation to see it here.'}
-            </p>
-          )}
-        </SidebarSection>
-      </ScrollArea>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup>
+            <SidebarGroupLabel>Chats</SidebarGroupLabel>
+            <SidebarGroupContent>
+              {filteredChats && filteredChats.length > 0 ? (
+                <SidebarMenu>
+                  {filteredChats.map((chat) => {
+                    const isActive = selectedChatId === chat._id;
+                    const project = chat.projectId ? projectsById.get(chat.projectId) : null;
+                    const isGeneratingTitle =
+                      chat.titleStatus === 'pending' || chat.titleStatus === 'generating';
+                    const titleNode = isGeneratingTitle ? (
+                      <Shimmer as="span" className="truncate">
+                        Generating title…
+                      </Shimmer>
+                    ) : (
+                      <span className="truncate">{chat.title?.trim() || CHAT_FALLBACK_TITLE}</span>
+                    );
+
+                    return (
+                      <SidebarMenuItem key={chat._id}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          onClick={() => handleSelectChat(chat)}
+                          className="flex-col items-start gap-1 pr-10"
+                        >
+                          {titleNode}
+                          {project ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                              <FolderIcon className="size-3" />
+                              {project.name}
+                            </span>
+                          ) : null}
+                        </SidebarMenuButton>
+
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <SidebarMenuAction
+                              showOnHover={!isActive}
+                              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                            >
+                              <MoreHorizontalIcon className="size-4" />
+                              <span className="sr-only">Chat actions</span>
+                            </SidebarMenuAction>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" side="bottom">
+                            <DropdownMenuItem onSelect={() => openRenameDialog(chat)}>
+                              <PencilIcon className="mr-2 size-4" />
+                              <span>Rename chat</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                              onSelect={() => openDeleteDialog(chat)}
+                            >
+                              <TrashIcon className="mr-2 size-4" />
+                              <span>Delete chat</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>
+                                <FolderIcon className="mr-2 size-4" />
+                                <span>Move to project</span>
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                  <DropdownMenuItem onSelect={() => handleMoveChat(chat, null)}>
+                                    <span className="ml-6 text-sm">No project</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  {projects?.map((projectOption) => (
+                                    <DropdownMenuItem
+                                      key={projectOption._id}
+                                      onSelect={() => handleMoveChat(chat, projectOption._id)}
+                                    >
+                                      <FolderIcon className="mr-2 size-4" />
+                                      <span>{projectOption.name}</span>
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              ) : (
+                <p className="rounded-md border border-dashed px-3 py-4 text-sm text-muted-foreground">
+                  {searchQuery ? 'No chats match your search.' : 'Send a message to start a chat.'}
+                </p>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarRail />
+      </Sidebar>
+
+      <Dialog open={isProjectDialogOpen} onOpenChange={setProjectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create a new project</DialogTitle>
+            <DialogDescription>
+              Projects group chats, documents, and memories under a shared workspace.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="project-name">
+                Name
+              </label>
+              <Input
+                id="project-name"
+                placeholder="Growth experiments"
+                value={projectName}
+                onChange={(event) => setProjectName(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="project-description">
+                Description
+              </label>
+              <Textarea
+                id="project-description"
+                rows={3}
+                placeholder="Optional context to help the assistant inside this project."
+                value={projectDescription}
+                onChange={(event) => setProjectDescription(event.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setProjectDialogOpen(false)}
+              disabled={isCreatingProject}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateProject} disabled={isCreatingProject || !projectName.trim()}>
+              {isCreatingProject ? 'Creating…' : 'Create project'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={isRenameDialogOpen}
-        onOpenChange={(open: boolean) => {
+        onOpenChange={(open) => {
           setRenameDialogOpen(open);
           if (!open) {
             setChatBeingRenamed(null);
@@ -501,7 +519,7 @@ export function ProjectSidebar({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <label className="text-sm font-medium text-foreground" htmlFor="chat-title">
+            <label className="text-sm font-medium" htmlFor="chat-title">
               Title
             </label>
             <Input
@@ -513,6 +531,7 @@ export function ProjectSidebar({
           </div>
           <DialogFooter>
             <Button
+              type="button"
               variant="outline"
               onClick={() => {
                 setRenameDialogOpen(false);
@@ -532,7 +551,7 @@ export function ProjectSidebar({
 
       <Dialog
         open={isDeleteDialogOpen}
-        onOpenChange={(open: boolean) => {
+        onOpenChange={(open) => {
           setDeleteDialogOpen(open);
           if (!open) {
             setChatBeingDeleted(null);
@@ -543,12 +562,13 @@ export function ProjectSidebar({
           <DialogHeader>
             <DialogTitle>Delete chat</DialogTitle>
             <DialogDescription>
-              This action will permanently remove the chat and all associated messages, artifacts,
-              and memories. This cannot be undone.
+              This action permanently removes the chat, including all messages, artifacts, and
+              memories.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
+              type="button"
               variant="outline"
               onClick={() => {
                 setDeleteDialogOpen(false);
@@ -558,17 +578,13 @@ export function ProjectSidebar({
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteChat}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={handleDeleteChat} disabled={isDeleting}>
               {isDeleting ? 'Deleting…' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </aside>
+    </>
   );
 }
 

@@ -32,6 +32,7 @@
   ],
   "exclude": [
     "node_modules",
-    "fork-ai-tools"
+    "fork-ai-tools",
+    "chatbot-vercel"
   ]
 }

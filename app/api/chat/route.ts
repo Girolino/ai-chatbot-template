@@ -25,8 +25,7 @@ type ChatRequestBody = {
   extendedThinking?: boolean;
 };
 
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+export const maxDuration = 90;
 
 type AuthResult = Awaited<ReturnType<typeof auth>>;
 
@@ -264,29 +263,6 @@ export async function POST(req: Request) {
           ),
         );
 
-        await convex.mutation(api.messages.appendAssistantMessage, {
-          chatId,
-          messageId: undefined,
-          parts: assistantContent,
-          providerMetadata: providerMetadata as unknown,
-          usage: totalUsage ?? undefined,
-          toolCalls,
-          status: 'complete',
-          createdAt: Date.now(),
-        });
-
-        await convex.mutation(api.chats.touch, { chatId, lastMessageAt: Date.now() });
-
-        await persistToolUsage(convex, chatId, toolCalls, toolResults);
-
-        const workingMemorySnippet = buildWorkingMemorySnippet(messages, assistantContent);
-        if (workingMemorySnippet) {
-          await memoryProvider.updateWorkingMemory({
-            scope: 'chat',
-            content: workingMemorySnippet,
-          });
-        }
-
         const finishedAt = new Date().toISOString();
         const runSummary = {
           status: 'complete' as const,
@@ -302,12 +278,36 @@ export async function POST(req: Request) {
           error: null as string | null,
         };
 
-        await convex.mutation(api.artifacts.upsert, {
+        const assistantCreatedAt = Date.now();
+
+        await convex.mutation(api.chatRuns.complete, {
           chatId,
-          type: 'chat-run',
-          payload: runSummary,
-          status: runSummary.status,
+          assistantMessage: {
+            messageId: undefined,
+            parts: assistantContent,
+            providerMetadata: providerMetadata as unknown,
+            usage: totalUsage ?? undefined,
+            toolCalls,
+            status: 'complete',
+            createdAt: assistantCreatedAt,
+          },
+          toolCalls,
+          toolResults,
+          lastMessageAt: assistantCreatedAt,
+          runArtifact: {
+            type: 'chat-run',
+            status: runSummary.status,
+            payload: runSummary,
+          },
         });
+
+        const workingMemorySnippet = buildWorkingMemorySnippet(messages, assistantContent);
+        if (workingMemorySnippet) {
+          await memoryProvider.updateWorkingMemory({
+            scope: 'chat',
+            content: workingMemorySnippet,
+          });
+        }
 
         await runArtifact.complete(runSummary);
       } catch (error) {
@@ -370,37 +370,6 @@ async function persistUserMessages(
       createdAt: Date.now(),
     });
   }
-}
-
-async function persistToolUsage(
-  convex: ReturnType<typeof createConvexClient>,
-  chatId: Id<'chats'>,
-  toolCalls: unknown[],
-  toolResults: unknown[],
-) {
-  if (!toolCalls || toolCalls.length === 0) {
-    return;
-  }
-
-  const resultsById = new Map(
-    (toolResults as Array<{ toolCallId?: string }>).map((result) => [result.toolCallId, result]),
-  );
-
-  await Promise.all(
-    (toolCalls as Array<{ toolName?: string; toolCallId?: string; input?: unknown }>).map(
-      async (call) => {
-        const result = call.toolCallId ? resultsById.get(call.toolCallId) : undefined;
-        await convex.mutation(api.tools.record, {
-          chatId,
-          toolName: call.toolName ?? 'unknown',
-          input: call.input,
-          output: result as unknown,
-          status: result ? 'complete' : 'pending',
-          durationMs: undefined,
-        });
-      },
-    ),
-  );
 }
 
 function extractTextFromParts(parts: unknown[]): string {

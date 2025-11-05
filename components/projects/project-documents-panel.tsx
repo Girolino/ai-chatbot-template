@@ -19,13 +19,7 @@ export function ProjectDocumentsPanel({ project }: ProjectDocumentsPanelProps) {
     project ? { projectId: project._id } : ('skip' as const),
   );
 
-  if (!project) {
-    return (
-      <div className="border-b bg-muted/40 px-6 py-4 text-sm text-muted-foreground">
-        Select a project to manage documents and retrieval memories.
-      </div>
-    );
-  }
+  if (!project) return null;
 
   return (
     <div className="border-b bg-muted/30 px-6 py-4">

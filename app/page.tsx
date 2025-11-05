@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { UserButton } from '@clerk/nextjs';
 import type {
@@ -50,6 +50,15 @@ import {
 } from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
 import { Action, Actions } from '@/components/ai-elements/actions';
 import { CopyIcon, GlobeIcon, ImageIcon, PlusIcon, RefreshCcwIcon, TimerIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -78,6 +87,7 @@ import { ProjectSidebar } from '@/components/projects/project-sidebar';
 import { ProjectDocumentsPanel } from '@/components/projects/project-documents-panel';
 import { ProjectChatList } from '@/components/projects/project-chat-list';
 import { nanoid } from 'nanoid';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 type MenuToggleItemProps = {
   icon: LucideIcon;
@@ -297,8 +307,48 @@ const ChatBotDemo = () => {
   const conversationEmpty = typedMessages.length === 0 && status !== 'streaming';
   const activeChatId = activeChat ? activeChat.chatId : null;
 
-return (
-    <div className="flex h-screen bg-background text-foreground">
+  const headerTitle = useMemo(() => {
+    if (activeChat) {
+      return activeChat.title?.trim() || 'Untitled chat';
+    }
+    if (selectedProject) {
+      return selectedProject.name;
+    }
+    return 'Workspace';
+  }, [activeChat, selectedProject]);
+
+  const statusLine = useMemo(() => {
+    if (activeChat) {
+      return activeChat.projectId
+        ? 'Chat powered by project context and memories.'
+        : '';
+    }
+    if (selectedProject) {
+      return `Working inside "${selectedProject.name}"`;
+    }
+    return '';
+  }, [activeChat, selectedProject]);
+
+  const breadcrumbItems = useMemo(() => {
+    if (activeChat) {
+      const items: { label: string; isCurrent?: boolean }[] = [];
+      if (selectedProject) {
+        items.push({ label: selectedProject.name });
+      }
+      const chatLabel = activeChat.chatId
+        ? headerTitle
+        : 'New chat';
+      items.push({ label: chatLabel, isCurrent: true });
+      return items;
+    }
+    if (selectedProject) {
+      return [{ label: selectedProject.name, isCurrent: true }];
+    }
+    return [{ label: 'Workspace', isCurrent: true }];
+  }, [activeChat, selectedProject, headerTitle]);
+
+  return (
+    <SidebarProvider defaultOpen>
       <ProjectSidebar
         selectedProjectId={selectedProjectId}
         selectedChatId={activeChatId}
@@ -309,29 +359,44 @@ return (
         onMoveChat={handleMoveChat}
         onDeleteChat={handleChatDeleted}
       />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="border-b px-6 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">
-                {activeChat?.title?.trim() ||
-                  (activeChat
-                    ? 'Chat session'
-                    : selectedProject
-                      ? selectedProject.name
-                      : 'Workspace')}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {activeChat
-                  ? activeChat.projectId
-                    ? 'Chat powered by project context and memories.'
-                    : 'General-purpose chat without project context.'
-                  : selectedProject
-                    ? `Working inside "${selectedProject.name}"`
-                    : 'Select a project to enable document retrieval and memory.'}
-              </p>
+      <SidebarInset className="flex h-svh flex-col bg-background text-foreground">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 md:px-6">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <div className="flex flex-1 items-center gap-3">
+            <div className="min-w-0 flex flex-col gap-1">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {breadcrumbItems.map((item, index) => {
+                    const isLast = index === breadcrumbItems.length - 1;
+                    return (
+                      <Fragment key={`${item.label}-${index}`}>
+                        <BreadcrumbItem className={!isLast && breadcrumbItems.length > 1 ? 'hidden md:block' : undefined}>
+                          {isLast || !item.isCurrent ? (
+                            isLast ? (
+                              <BreadcrumbPage className="truncate">{item.label}</BreadcrumbPage>
+                            ) : (
+                              <span className="truncate text-muted-foreground">{item.label}</span>
+                            )
+                          ) : (
+                            <BreadcrumbLink asChild>
+                              <span className="truncate text-muted-foreground">{item.label}</span>
+                            </BreadcrumbLink>
+                          )}
+                        </BreadcrumbItem>
+                        {index < breadcrumbItems.length - 1 ? (
+                          <BreadcrumbSeparator className="hidden md:block" />
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                </BreadcrumbList>
+              </Breadcrumb>
+              {statusLine ? (
+                <p className="text-xs text-muted-foreground line-clamp-1">{statusLine}</p>
+              ) : null}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="ml-auto flex items-center gap-3">
               <PromptModelSelector model={model} onChange={setModel} />
               <UserButton afterSignOutUrl="/" />
             </div>
@@ -343,7 +408,7 @@ return (
         <div className="flex flex-1 flex-col overflow-hidden">
           {activeChat ? (
             <>
-              <div className="flex-1 overflow-hidden px-6 pb-4">
+              <div className="flex-1 overflow-hidden px-4 pb-4 md:px-6">
                 <Conversation className="h-full">
                   <ConversationContent>
                     <TextNotePanel />
@@ -366,7 +431,7 @@ return (
                 </Conversation>
               </div>
 
-              <div className="border-t bg-background px-6 py-4">
+              <div className="border-t bg-background px-4 py-4 md:px-6">
                 <PromptInput onSubmit={handleSubmit} className="w-full" globalDrop multiple>
                   <PromptInputHeader>
                     <PromptInputAttachments>
@@ -461,8 +526,8 @@ return (
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 
